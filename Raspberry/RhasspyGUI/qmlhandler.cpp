@@ -67,4 +67,12 @@ void QMLHandler::onPostFinish(QNetworkReply* reply)
     qDebug() << "Request reply received";
     qDebug() << reply->readAll();
     file->close();
+
+    clientTCP = new Client("127.0.0.1", 502);
+
+    char buffer[] = {41, 1};
+
+    clientTCP->envoie(buffer, sizeof(buffer));
+
+    delete clientTCP;
 }
