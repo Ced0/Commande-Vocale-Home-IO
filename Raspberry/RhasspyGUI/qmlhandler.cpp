@@ -27,8 +27,8 @@ QMLHandler::QMLHandler(QObject *parent) : QObject(parent)
 void QMLHandler::setQml(QObject *obj, const QUrl &objUrl)
 {
     qmlObj = obj;
-    QObject *bouton = obj->findChild<QObject*>("myItem");
-    QObject::connect(bouton, SIGNAL(clicked()),
+    btnRecord = obj->findChild<QQuickItem*>("btnRecord");
+    QObject::connect(btnRecord, SIGNAL(clicked()),
                      this, SLOT(click()));
 }
 
@@ -39,8 +39,13 @@ void QMLHandler::click()
         qDebug() << "Start record";
         audioRecorder->record();
         recording = true;
+
+        //((QPushButton *)btnRecord)->setText("Stop record command");
+        btnRecord->setProperty("text", "Stop record command");
     }else{
         qDebug() << "Stop record";
+        //((QPushButton *)btnRecord)->setText("Start record command");
+        btnRecord->setProperty("text", "Start record command");
         audioRecorder->stop();
         recording = false;
 
@@ -53,7 +58,7 @@ void QMLHandler::click()
 
             qDebug() << "Send post request";
 
-            QNetworkReply* reply = mgr->post(QNetworkRequest(QUrl("http://192.168.0.12:12101/api/speech-to-intent?nohass=true")), file->readAll());
+            QNetworkReply* reply = mgr->post(QNetworkRequest(QUrl("http://169.254.140.106:12101/api/speech-to-intent?nohass=true")), file->readAll());
 
             qDebug() << "Wait for reply";
         }
@@ -64,15 +69,27 @@ void QMLHandler::click()
 
 void QMLHandler::onPostFinish(QNetworkReply* reply)
 {
+
+
     qDebug() << "Request reply received";
     qDebug() << reply->readAll();
     file->close();
 
     clientTCP = new Client("127.0.0.1", 502);
 
-    char buffer[] = {41, 1};
+    //unsigned char buffer[] = {0x01, 0x01, 0xFF};
+    unsigned char buffer[] = {00, 0x00, 00, 00, 00, 0x06, 0x01, 0x05, 00, 0x00, 0xFF, 00};
 
-    clientTCP->envoie(buffer, sizeof(buffer));
+    char receive[20];
+
+    clientTCP->envoie((char *)buffer, sizeof(buffer));
+    /*clientTCP->reception(receive, 2);
+
+    for(int i = 0; i < 20; i++)
+    {
+        qDebug() << receive[i];
+    }*/
+
 
     delete clientTCP;
 }

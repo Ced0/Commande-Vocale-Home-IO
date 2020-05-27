@@ -1,4 +1,4 @@
-QT += quick multimedia
+QT += quick multimedia widgets
 
 CONFIG += c++11
 
@@ -39,5 +39,5 @@ HEADERS += \
 
 windows:
 {
-    LIBS += lws2_32
+    LIBS += -lws2_32
 }
