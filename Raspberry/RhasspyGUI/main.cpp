@@ -2,12 +2,18 @@
 #include <QQmlApplicationEngine>
 #include <QQmlComponent>
 #include <qmlhandler.h>
+#include "wsainit.h"
+#include "client.h"
 
 int main(int argc, char *argv[])
 {
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 
     QGuiApplication app(argc, argv);
+
+    #ifdef _WIN32
+        WSAInit wsa;
+    #endif
 
     QMLHandler handler;
 

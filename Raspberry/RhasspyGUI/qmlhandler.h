@@ -12,6 +12,8 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QHttpMultiPart>
+#include "client.h"
+#include <QQuickItem>
 
 class QMLHandler : public QObject
 {
@@ -32,6 +34,8 @@ private:
     QAudioEncoderSettings audioSettings;
     bool recording = false;
     QFile *file;
+    Client* clientTCP;
+    QQuickItem* btnRecord;
 };
 
 #endif // QMLHANDLER_H
