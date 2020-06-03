@@ -19,8 +19,6 @@ QMLHandler::QMLHandler(QObject *parent) : QObject(parent)
     }
 
     audioRecorder->setOutputLocation(QUrl::fromLocalFile(QCoreApplication::applicationDirPath() + "/record.wav"));
-
-    //qDebug() << audioRecorder->outputLocation();
 }
 
 
@@ -28,6 +26,8 @@ void QMLHandler::setQml(QObject *obj, const QUrl &objUrl)
 {
     qmlObj = obj;
     btnRecord = obj->findChild<QQuickItem*>("btnRecord");
+    labelDetected = obj->findChild<QQuickItem*>("labelDetected");
+
     QObject::connect(btnRecord, SIGNAL(clicked()),
                      this, SLOT(click()));
 }
@@ -40,11 +40,11 @@ void QMLHandler::click()
         audioRecorder->record();
         recording = true;
 
-        //((QPushButton *)btnRecord)->setText("Stop record command");
         btnRecord->setProperty("text", "Stop record command");
+
     }else{
+
         qDebug() << "Stop record";
-        //((QPushButton *)btnRecord)->setText("Start record command");
         btnRecord->setProperty("text", "Start record command");
         audioRecorder->stop();
         recording = false;
@@ -58,7 +58,7 @@ void QMLHandler::click()
 
             qDebug() << "Send post request";
 
-            QNetworkReply* reply = mgr->post(QNetworkRequest(QUrl("http://169.254.140.106:12101/api/speech-to-intent?nohass=true")), file->readAll());
+            QNetworkReply* reply = mgr->post(QNetworkRequest(QUrl("http://169.254.36.97:12101/api/speech-to-intent?nohass=true")), file->readAll());
 
             qDebug() << "Wait for reply";
         }
@@ -72,24 +72,115 @@ void QMLHandler::onPostFinish(QNetworkReply* reply)
 
 
     qDebug() << "Request reply received";
-    qDebug() << reply->readAll();
+    QByteArray answerData = reply->readAll();
+    qDebug() << answerData;
     file->close();
+
+
+
+    QJsonDocument answerDoc = QJsonDocument::fromJson(answerData);
+
+    QString result = "";
+
+    if(answerDoc.isArray())
+    {
+        result = answerDoc.array().last()["raw_text"].toString();
+    }else{
+        result = answerDoc["raw_text"].toString();
+    }
+
+    qDebug() << result;
+
+    labelDetected->setProperty("text", "Speech detected: " + result);
+
+    unsigned char buffer[12] = {00, 0x00, 00, 00, 00, 0x06, 0x01};
 
     clientTCP = new Client("127.0.0.1", 502);
 
-    //unsigned char buffer[] = {0x01, 0x01, 0xFF};
-    unsigned char buffer[] = {00, 0x00, 00, 00, 00, 0x06, 0x01, 0x05, 00, 0x00, 0xFF, 00};
+    modbusID++;
+    memcpy(buffer, &modbusID, 2);
 
-    char receive[20];
-
-    clientTCP->envoie((char *)buffer, sizeof(buffer));
-    /*clientTCP->reception(receive, 2);
-
-    for(int i = 0; i < 20; i++)
+    if(result.contains("switch light"))
     {
-        qDebug() << receive[i];
-    }*/
 
+        unsigned char tmp[] = {0x05, 00, 0x00, 0x00, 00};
+
+        memcpy(buffer, tmp, sizeof(tmp));
+
+        qDebug() << "Switch light";
+
+        if(result.contains("on"))
+        {
+            qDebug() << "ON";
+            buffer[10] = 0xFF;
+        }else if(result.contains("off")){
+
+            qDebug() << "OFF";
+        }
+
+    }else if(result.contains("switch radiator"))
+    {
+        qDebug() << "Switch radiator";
+
+        unsigned char tmp[] = {0x05, 00, 0x02, 0x00, 00};
+
+        memcpy(buffer, tmp, sizeof(tmp));
+
+        if(result.contains("on"))
+        {
+            qDebug() << "ON";
+            buffer[10] = 0xFF;
+        }else if(result.contains("off")){
+
+            qDebug() << "OFF";
+        }
+
+    }else if(result.contains("windows blinds"))
+    {
+
+        qDebug() << "Windows blinds";
+
+        unsigned char tmp[] = {0x05, 00, 0x03, 0x00, 00};
+
+        memcpy(buffer, tmp, sizeof(tmp));
+
+        if(result.contains("open"))
+        {
+            qDebug() << "Open";
+            buffer[10] = 0xFF;
+        }else if(result.contains("close")){
+
+            qDebug() << "Close";
+        }
+
+    }else if(result.contains("whats the temperature"))
+    {
+        qDebug() << "Temperature";
+
+        unsigned char tmp[] = {0x04, 00, 0x00, 0x00, 01};
+
+        memcpy(buffer, tmp, sizeof(tmp));
+    }
+
+
+    for(int i = 0; i < sizeof(buffer); i++)
+    {
+        qDebug() << hex << buffer[i];
+    }
+
+    if(clientTCP->envoie((char *)buffer, sizeof(buffer)))
+    {
+        unsigned char ack[sizeof(buffer)];
+
+        clientTCP->reception((char *)ack, sizeof(ack));
+
+        for(int i = 0; i < sizeof(ack); i++)
+        {
+            qDebug() << hex << ack[i];
+        }
+    }
 
     delete clientTCP;
+
+
 }

@@ -4,6 +4,7 @@
 #include <qmlhandler.h>
 #include "wsainit.h"
 #include "client.h"
+#include <cstring>
 
 int main(int argc, char *argv[])
 {

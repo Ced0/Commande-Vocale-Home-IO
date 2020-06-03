@@ -35,7 +35,7 @@ Client::Client(const char* ip,  unsigned int port)
 
     int temp = 1;
 
-    erreur = setsockopt(mySocket, IPPROTO_TCP,TCP_NODELAY,(char*)& temp, sizeof(temp));
+    erreur = setsockopt(mySocket, IPPROTO_TCP,TCP_NODELAY,(char*)&temp, sizeof(temp));
 
     if(erreur != 0)
         qDebug() << "Erreur option socket : " << erreur << " " << WSAGetLastError() << endl;
@@ -68,7 +68,7 @@ bool Client::connectSocket(const char* ip, unsigned int port)
 
 bool Client::envoie(const char *buffer, int size)
 {
-    int n = send(mySocket, buffer, size,0);
+    int n = send(mySocket, buffer, size, 0);
     if(n == SOCKET_ERROR)
     {
         qDebug() << "Erreur envoie TCP : " << n << " " << WSAGetLastError() << endl;

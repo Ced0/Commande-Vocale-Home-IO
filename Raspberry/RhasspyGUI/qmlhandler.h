@@ -14,6 +14,8 @@
 #include <QHttpMultiPart>
 #include "client.h"
 #include <QQuickItem>
+#include <QJsonDocument>
+#include <QJsonArray>
 
 class QMLHandler : public QObject
 {
@@ -36,6 +38,8 @@ private:
     QFile *file;
     Client* clientTCP;
     QQuickItem* btnRecord;
+    QQuickItem* labelDetected;
+    unsigned short modbusID = 0;
 };
 
 #endif // QMLHANDLER_H
