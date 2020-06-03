@@ -11,12 +11,17 @@ import android.widget.TextView;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.net.InetAddress;
 import java.net.Socket;
 
 public class MainActivity extends AppCompatActivity {
 
-    Button justAButton;
+    Button btnLightOn;
+    Button btnLightOff;
+    Button btnRadiatorOn;
+    Button btnRadiatorOff;
+    Button btnOpenBlinds;
+    Button btnCloseBlinds;
+
     TextView txt;
     Socket modbusSocket;
     OutputStream modbusSendStream;
@@ -34,13 +39,13 @@ public class MainActivity extends AppCompatActivity {
         // à partir de données issues de la tâche en arrière plan
         // elle n'est pas obligatoire
         //@Override
-        protected void onProgressUpdate(String result){
-            txt.setText(result);
+        protected void onProgressUpdate(String[] result){
+            txt.setText(result[0]);
         }
 
 
         @Override
-        protected String doInBackground(String[] notUsed) {
+        protected String doInBackground(String[] command) {
 
             //publishProgress(); //Function to update progress to th UI
             try {
@@ -53,7 +58,36 @@ public class MainActivity extends AppCompatActivity {
                 return "";
             }
 
-            byte[] buffer = {00, 0x00, 00, 00, 00, 0x06, 0x01, 0x05, 00, 0x00, (byte)0xFF, 00};
+            byte[] buffer = {00, 0x00, 00, 00, 00, 0x06, 0x01, 0x05, 00, 0x00, (byte)0x00, 00};
+
+            Log.i("2-", command[0]);
+
+
+            switch(command[0])
+            {
+                case "light on":
+                    buffer[10] = (byte)0xFF;
+                    break;
+                case "close blinds":
+                    buffer[9] = (byte)0x03;
+                    buffer[10] = (byte)0x00;
+                    break;
+                case "open blinds":
+                    buffer[9] = (byte)0x03;
+                    buffer[10] = (byte)0xFF;
+                    break;
+                case "radiator on":
+                    buffer[9] = (byte)0x02;
+                    buffer[10] = (byte)0xFF;
+                    break;
+                case "radiator off":
+                    buffer[9] = (byte)0x02;
+                    buffer[10] = 0;
+                    break;
+                default:
+                    return "";
+                    //break;
+            }
 
             try {
                 modbusSendStream.write(buffer);
@@ -82,28 +116,73 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        justAButton = findViewById(R.id.btnJustAButton);
+        btnLightOn = findViewById(R.id.btnLightOn);
+        btnLightOff = findViewById(R.id.btnLightOff);
+        btnRadiatorOn = findViewById(R.id.btnRadiatorOn);
+        btnRadiatorOff = findViewById(R.id.btnRadiatorOff);
+        btnCloseBlinds = findViewById(R.id.btnCloseBlinds);
+        btnOpenBlinds = findViewById(R.id.btnOpenBlinds);
         txt = findViewById(R.id.textView);
 
         asyncTask = new TacheAsynchrone();
 
-        justAButton.setOnClickListener(new View.OnClickListener() {
+        btnLightOn.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
 
-                if(asyncTask.getStatus() == AsyncTask.Status.RUNNING) return;
-
-                // si la tâche asynchrone précédente est terminée on en crée
-                // une nouvelle, car on ne peut pas démarrer plusieurs fois
-                // la même tâche
-                if(asyncTask.getStatus() == AsyncTask.Status.FINISHED) {
-                    asyncTask = new TacheAsynchrone();
-                }
-
-                // on lance la tâche asynchrone suite à l’appui sur le bouton
-                asyncTask.execute("Pass the command here !");
-
+                launchModbusTask("light on");
             }
         });
+
+        btnLightOff.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+
+                launchModbusTask("light off");
+            }
+        });
+
+        btnRadiatorOn.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+
+                launchModbusTask("radiator on");
+            }
+        });
+
+
+        btnRadiatorOff.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+
+                launchModbusTask("radiator off");
+            }
+        });
+
+        btnCloseBlinds.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+
+                launchModbusTask("close blinds");
+            }
+        });
+
+        btnOpenBlinds.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+
+                launchModbusTask("open blinds");
+            }
+        });
+    }
+
+    public void launchModbusTask(String command)
+    {
+        if(asyncTask.getStatus() == AsyncTask.Status.RUNNING) return;
+
+        // si la tâche asynchrone précédente est terminée on en crée
+        // une nouvelle, car on ne peut pas démarrer plusieurs fois
+        // la même tâche
+        if(asyncTask.getStatus() == AsyncTask.Status.FINISHED) {
+            asyncTask = new TacheAsynchrone();
+        }
+
+        // on lance la tâche asynchrone suite à l’appui sur le bouton
+        asyncTask.execute(command);
     }
 
 
