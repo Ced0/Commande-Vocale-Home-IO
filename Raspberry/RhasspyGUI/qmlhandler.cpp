@@ -105,7 +105,7 @@ void QMLHandler::onPostFinish(QNetworkReply* reply)
 
         unsigned char tmp[] = {0x05, 00, 0x00, 0x00, 00};
 
-        memcpy(buffer, tmp, sizeof(tmp));
+        memcpy(buffer+7, tmp, sizeof(tmp));
 
         qDebug() << "Switch light";
 
@@ -122,9 +122,9 @@ void QMLHandler::onPostFinish(QNetworkReply* reply)
     {
         qDebug() << "Switch radiator";
 
-        unsigned char tmp[] = {0x05, 00, 0x02, 0x00, 00};
+        unsigned char tmp[] = {0x05, 00, 0x03, 0x00, 00};
 
-        memcpy(buffer, tmp, sizeof(tmp));
+        memcpy(buffer+7, tmp, sizeof(tmp));
 
         if(result.contains("on"))
         {
@@ -140,9 +140,9 @@ void QMLHandler::onPostFinish(QNetworkReply* reply)
 
         qDebug() << "Windows blinds";
 
-        unsigned char tmp[] = {0x05, 00, 0x03, 0x00, 00};
+        unsigned char tmp[] = {0x05, 00, 0x04, 0x00, 00};
 
-        memcpy(buffer, tmp, sizeof(tmp));
+        memcpy(buffer+7, tmp, sizeof(tmp));
 
         if(result.contains("open"))
         {
@@ -157,9 +157,9 @@ void QMLHandler::onPostFinish(QNetworkReply* reply)
     {
         qDebug() << "Temperature";
 
-        unsigned char tmp[] = {0x04, 00, 0x00, 0x00, 01};
+        unsigned char tmp[] = {0x04, 00, 0x08, 0x00, 01};
 
-        memcpy(buffer, tmp, sizeof(tmp));
+        memcpy(buffer+7, tmp, sizeof(tmp));
     }
 
 
