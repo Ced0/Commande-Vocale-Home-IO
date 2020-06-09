@@ -36,8 +36,16 @@
 
 
 #include <string.h>
-#include <QDebug>
 
+//#define QT
+
+#ifdef QT
+#include <QDebug>
+#define output qDebug()
+#else
+#include <iostream>
+#define output std::cout
+#endif
 
 using namespace std;
 

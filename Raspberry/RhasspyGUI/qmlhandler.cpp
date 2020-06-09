@@ -58,7 +58,7 @@ void QMLHandler::click()
 
             qDebug() << "Send post request";
 
-            QNetworkReply* reply = mgr->post(QNetworkRequest(QUrl("http://169.254.36.97:12101/api/speech-to-intent?nohass=true")), file->readAll());
+            QNetworkReply* reply = mgr->post(QNetworkRequest(QUrl("http://192.168.0.12:12101/api/speech-to-intent?nohass=true")), file->readAll());
 
             qDebug() << "Wait for reply";
         }
