@@ -68,6 +68,14 @@ bool Client::connectSocket(const char* ip, unsigned int port)
 
 bool Client::envoie(const char *buffer, int size)
 {
+    for(int i = 0; i < size; i++)
+    {
+        cout << *(buffer+i);
+    }
+
+    cout << endl;
+
+
     int n = send(mySocket, buffer, size, 0);
     if(n == SOCKET_ERROR)
     {

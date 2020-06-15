@@ -93,30 +93,31 @@ void QMLHandler::onPostFinish(QNetworkReply* reply)
 
     labelDetected->setProperty("text", "Speech detected: " + result);
 
-    unsigned char buffer[12] = {00, 0x00, 00, 00, 00, 0x06, 0x01};
+    unsigned char bufferModbus[12] = {00, 0x00, 00, 00, 00, 0x06, 0x01};
+    QString bufferRealObject;
 
-    clientTCP = new Client("127.0.0.1", 502);
-
-    modbusID++;
-    memcpy(buffer, &modbusID, 2);
+    bool modbus = false;
+    bool realObject = false;
 
     if(result.contains("switch light"))
     {
 
         unsigned char tmp[] = {0x05, 00, 0x00, 0x00, 00};
 
-        memcpy(buffer+7, tmp, sizeof(tmp));
+        memcpy(bufferModbus+7, tmp, sizeof(tmp));
 
         qDebug() << "Switch light";
 
         if(result.contains("on"))
         {
             qDebug() << "ON";
-            buffer[10] = 0xFF;
+            bufferModbus[10] = 0xFF;
         }else if(result.contains("off")){
 
             qDebug() << "OFF";
         }
+
+        modbus = true;
 
     }else if(result.contains("switch radiator"))
     {
@@ -124,16 +125,18 @@ void QMLHandler::onPostFinish(QNetworkReply* reply)
 
         unsigned char tmp[] = {0x05, 00, 0x03, 0x00, 00};
 
-        memcpy(buffer+7, tmp, sizeof(tmp));
+        memcpy(bufferModbus+7, tmp, sizeof(tmp));
 
         if(result.contains("on"))
         {
             qDebug() << "ON";
-            buffer[10] = 0xFF;
+            bufferModbus[10] = 0xFF;
         }else if(result.contains("off")){
 
             qDebug() << "OFF";
         }
+
+        modbus = true;
 
     }else if(result.contains("windows blinds"))
     {
@@ -142,45 +145,104 @@ void QMLHandler::onPostFinish(QNetworkReply* reply)
 
         unsigned char tmp[] = {0x05, 00, 0x04, 0x00, 00};
 
-        memcpy(buffer+7, tmp, sizeof(tmp));
+        memcpy(bufferModbus+7, tmp, sizeof(tmp));
 
         if(result.contains("open"))
         {
             qDebug() << "Open";
-            buffer[10] = 0xFF;
+            bufferModbus[10] = 0xFF;
+            bufferRealObject = "relay on";
         }else if(result.contains("close")){
 
             qDebug() << "Close";
+            bufferRealObject = "relay off";
         }
+
+        realObject = true;
+        modbus = true;
 
     }else if(result.contains("whats the temperature"))
     {
         qDebug() << "Temperature";
 
-        unsigned char tmp[] = {0x04, 00, 0x08, 0x00, 01};
+        //unsigned char tmp[] = {0x04, 00, 0x08, 0x00, 01};
 
-        memcpy(buffer+7, tmp, sizeof(tmp));
+        //memcpy(buffer+7, tmp, sizeof(tmp));
+
+        bufferRealObject = "temp";
+        realObject = true;
+    }else if(result.contains("whats the humidity"))
+    {
+        qDebug() << "Humidité";
+
+        //unsigned char tmp[] = {0x04, 00, 0x08, 0x00, 01};
+
+        //memcpy(buffer+7, tmp, sizeof(tmp));
+
+        bufferRealObject = "humi";
+        realObject = true;
     }
 
-
-    for(int i = 0; i < sizeof(buffer); i++)
+    if(realObject == true)
     {
-        qDebug() << hex << buffer[i];
-    }
+        clientTCP = new Client("192.168.0.12", 1234);
 
-    if(clientTCP->envoie((char *)buffer, sizeof(buffer)))
-    {
-        unsigned char ack[sizeof(buffer)];
-
-        clientTCP->reception((char *)ack, sizeof(ack));
-
-        for(int i = 0; i < sizeof(ack); i++)
+        if(clientTCP->envoie(bufferRealObject.toStdString().c_str(), bufferRealObject.size()))
         {
-            qDebug() << hex << ack[i];
+            char answer[20];
+
+            clientTCP->reception(answer, 20);
+
+            if(bufferRealObject == "temp")
+            {
+                float temp;
+                memcpy(&temp, answer, sizeof(float));
+                qDebug() << temp;
+            }else if(bufferRealObject == "humi")
+            {
+                float humi;
+                memcpy(&humi, answer, sizeof(float));
+                qDebug() << humi;
+            }
+
         }
+
+        char bye[] = "bye";
+
+        clientTCP->envoie(bye, sizeof(bye));
+
+        delete clientTCP;
     }
 
-    delete clientTCP;
+    if(modbus == true)
+    {
+        clientTCP = new Client("127.0.0.1", 502);
+
+        modbusID++;
+        memcpy(bufferModbus, &modbusID, 2);
+
+        for(int i = 0; i < sizeof(bufferModbus); i++)
+        {
+            qDebug() << hex << bufferModbus[i];
+        }
+
+        if(clientTCP->envoie((char *)bufferModbus, sizeof(bufferModbus)))
+        {
+            unsigned char ack[sizeof(bufferModbus)];
+
+            clientTCP->reception((char *)ack, sizeof(ack));
+
+            for(int i = 0; i < sizeof(ack); i++)
+            {
+                qDebug() << hex << ack[i];
+            }
+        }
+
+        delete clientTCP;
+
+    }
+
+
 
 
 }
