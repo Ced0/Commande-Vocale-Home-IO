@@ -13,11 +13,11 @@ int main(int argc, char *argv[])
 
     Serveur serv(&mtx);
 
-    #ifdef _WIN32
+    #ifdef _WIN32//Ask windows permission to use socket
     WSAInit wsa;
     #endif
 
-    serv.launchListenerThread(1234);
+    serv.launchListenerThread(1234);//Start server on 1234
 
 
     return a.exec();

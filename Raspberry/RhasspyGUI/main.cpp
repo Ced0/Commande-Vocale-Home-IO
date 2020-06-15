@@ -12,10 +12,11 @@ int main(int argc, char *argv[])
 
     QGuiApplication app(argc, argv);
 
-    #ifdef _WIN32
+    #ifdef _WIN32//Ask windows permission to use socket
         WSAInit wsa;
     #endif
 
+    //Load qml
     QMLHandler handler;
 
     QQmlApplicationEngine engine;

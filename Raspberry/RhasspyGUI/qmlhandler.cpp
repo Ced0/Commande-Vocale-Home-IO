@@ -2,6 +2,7 @@
 
 QMLHandler::QMLHandler(QObject *parent) : QObject(parent)
 {
+    //Set recording settings
     audioRecorder = new QAudioRecorder();
     audioSettings.setCodec("audio/pcm");
     audioSettings.setSampleRate(16000);
@@ -11,6 +12,7 @@ QMLHandler::QMLHandler(QObject *parent) : QObject(parent)
 
     audioRecorder->setEncodingSettings(audioSettings, QVideoEncoderSettings(), "audio/x-wav");
 
+    //Create the output file, if doesn't exist
     file= new QFile(QCoreApplication::applicationDirPath() + "/record.wav");
     if(file->exists() == true)
     {
@@ -24,6 +26,7 @@ QMLHandler::QMLHandler(QObject *parent) : QObject(parent)
 
 void QMLHandler::setQml(QObject *obj, const QUrl &objUrl)
 {
+    //When the qml is loaded, get link to the desired objects
     qmlObj = obj;
     btnRecord = obj->findChild<QQuickItem*>("btnRecord");
     labelDetected = obj->findChild<QQuickItem*>("labelDetected");
@@ -34,6 +37,7 @@ void QMLHandler::setQml(QObject *obj, const QUrl &objUrl)
 
 void QMLHandler::click()
 {
+    //Start recording
     if(recording == false)
     {
         qDebug() << "Start record";
@@ -42,13 +46,14 @@ void QMLHandler::click()
 
         btnRecord->setProperty("text", "Stop record command");
 
-    }else{
+    }else{//Stop recording
 
         qDebug() << "Stop record";
         btnRecord->setProperty("text", "Start record command");
         audioRecorder->stop();
         recording = false;
 
+        //Send post request to Rhaspsy API
         QNetworkAccessManager * mgr = new QNetworkAccessManager(this);
             connect(mgr,SIGNAL(finished(QNetworkReply*)),this,SLOT(onPostFinish(QNetworkReply*)));
             connect(mgr,SIGNAL(finished(QNetworkReply*)),mgr,SLOT(deleteLater()));
@@ -69,14 +74,14 @@ void QMLHandler::click()
 
 void QMLHandler::onPostFinish(QNetworkReply* reply)
 {
-
+    //When the Rhasspy API answers
 
     qDebug() << "Request reply received";
     QByteArray answerData = reply->readAll();
     qDebug() << answerData;
     file->close();
 
-
+    //Look at result
 
     QJsonDocument answerDoc = QJsonDocument::fromJson(answerData);
 
@@ -93,6 +98,7 @@ void QMLHandler::onPostFinish(QNetworkReply* reply)
 
     labelDetected->setProperty("text", "Speech detected: " + result);
 
+    //Create buffers to be filled
     unsigned char bufferModbus[12] = {00, 0x00, 00, 00, 00, 0x06, 0x01};
     QString bufferRealObject;
 
@@ -183,7 +189,10 @@ void QMLHandler::onPostFinish(QNetworkReply* reply)
         realObject = true;
     }
 
-    if(realObject == true)
+
+    //Send the appropriate messages
+
+    if(realObject == true)//Sensors and relay TCP connection
     {
         clientTCP = new Client("192.168.0.12", 1234);
 
@@ -214,7 +223,7 @@ void QMLHandler::onPostFinish(QNetworkReply* reply)
         delete clientTCP;
     }
 
-    if(modbus == true)
+    if(modbus == true)//Modbus connection
     {
         clientTCP = new Client("127.0.0.1", 502);
 
@@ -241,8 +250,5 @@ void QMLHandler::onPostFinish(QNetworkReply* reply)
         delete clientTCP;
 
     }
-
-
-
 
 }

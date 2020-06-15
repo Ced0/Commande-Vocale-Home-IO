@@ -4,12 +4,14 @@ Client::Client()
 {
     int erreur;
 
+    //Create socket
     mySocket = socket(AF_INET,SOCK_STREAM,0);
     if(mySocket == INVALID_SOCKET)
         output << "Erreur création de la socket : " << WSAGetLastError() << endl;
 
     int temp = 1;
 
+    //Configure socket for TCP
     erreur = setsockopt(mySocket, IPPROTO_TCP,TCP_NODELAY,(char*)& temp, sizeof(temp));
 
     if(erreur != 0)
@@ -19,22 +21,15 @@ Client::Client()
 Client::Client(const char* ip,  unsigned int port)
 {
     int erreur;
-    #ifdef _WIN32
-    WSADATA init_win32;
 
-
-    erreur = WSAStartup(MAKEWORD(2,2), &init_win32);
-    if(erreur != 0)
-        output << "Erreur initialisation : " << erreur << " " << WSAGetLastError() << endl;
-
-    #endif
-
+    //Create socket
     mySocket = socket(AF_INET,SOCK_STREAM,0);
     if(mySocket == INVALID_SOCKET)
         output << "Erreur création de la socket : " << WSAGetLastError() << endl;
 
     int temp = 1;
 
+    //Configure socket for TCP
     erreur = setsockopt(mySocket, IPPROTO_TCP,TCP_NODELAY,(char*)&temp, sizeof(temp));
 
     if(erreur != 0)

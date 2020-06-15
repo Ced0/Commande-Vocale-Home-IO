@@ -47,8 +47,11 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected String doInBackground(String[] command) {
 
-            //publishProgress(); //Function to update progress to th UI
+            //publishProgress();
+            // Function to update progress to th UI
+
             try {
+                //Create a socket
                 modbusSocket = new Socket("10.188.181.186", 502);
                 modbusSendStream = modbusSocket.getOutputStream();
 
@@ -58,10 +61,10 @@ public class MainActivity extends AppCompatActivity {
                 return "";
             }
 
+            //Create and fill the buffer according to the command
             byte[] buffer = {00, 0x00, 00, 00, 00, 0x06, 0x01, 0x05, 00, 0x00, (byte)0x00, 00};
 
             Log.i("2-", command[0]);
-
 
             switch(command[0])
             {
@@ -89,6 +92,7 @@ public class MainActivity extends AppCompatActivity {
                     //break;
             }
 
+            //Send the message
             try {
                 modbusSendStream.write(buffer);
             } catch (IOException e) {
@@ -170,7 +174,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    public void launchModbusTask(String command)
+    public void launchModbusTask(String command)//Launch the modbus thread
     {
         if(asyncTask.getStatus() == AsyncTask.Status.RUNNING) return;
 

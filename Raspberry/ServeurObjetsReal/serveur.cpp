@@ -10,6 +10,7 @@ Serveur::~Serveur()
 {
     stop = true;
 
+    //Wait for all threads to stop
     for(int i = 0; i < threads.size(); i++)
     {
         threads[i].join();
@@ -29,6 +30,7 @@ void Serveur::launchListenerThread(unsigned short port)
 
 void Serveur::listenerThread(unsigned short port)
 {
+    //Create listener socket
     SOCKET socket_ecoute;//identifiant de la socket d'ecoute du cote serveur
     SOCKADDR_IN information_sur_la_source;
     //pour le thread
@@ -43,6 +45,7 @@ void Serveur::listenerThread(unsigned short port)
         qDebug() << "socket : OK" << endl;
     }
 
+    //Configure socket
     int tempo = 1;
     int erreur = setsockopt(socket_ecoute, IPPROTO_TCP,TCP_NODELAY,(char*)&tempo, sizeof(tempo));
 
@@ -62,7 +65,7 @@ void Serveur::listenerThread(unsigned short port)
         qDebug() << "bind(): OK" << endl;
     }
 
-
+    //Set the socket in non-block mode
     unsigned long nonBlock = 1;
 
     #ifdef __linux__
@@ -127,10 +130,10 @@ void Serveur::ClientThread(SOCKET current_client)
     //buffer pour les données a envoyer
     char sendData[10] = {0};
     int res;
+
     //boucle de reception des données du client
     while(stop == false)
     {
-
         memset(buf, 0, 300);
         res = recv(current_client, buf, sizeof(buf), 0);//reception de la commanded'un client
         //Sleep(10);
@@ -156,14 +159,18 @@ void Serveur::ClientThread(SOCKET current_client)
             strcpy(sendData, "bye bye...\r\n");
             //Sleep(10);
             send(current_client, sendData, sizeof(sendData), 0);
-            //fermer le  socket associe avec ce cleint et terminer le thread en cours
+            //fermer le  socket associe avec ce cient et terminer le thread en cours
             closesocket(current_client);
             break;
             //std::terminate();
+
         }else if(strstr(buf, "temp")){
+            //Answers with temperature from sensor
             mtx->lock();
 
             float temp = temperature();
+
+            mtx->unlock();
 
             int n = send(current_client, &temp, sizeof(temp), 0);
             if(n == SOCKET_ERROR)
@@ -171,14 +178,16 @@ void Serveur::ClientThread(SOCKET current_client)
                 qDebug() << "Erreur envoie TCP : " << n << " " << WSAGetLastError() << endl;
             }
 
-            mtx->unlock();
+
 
             emit received(buf, res);
         }else if(strstr(buf, "humi")){
-
+            //Answers with humidity from sensor
             mtx->lock();
 
             float humi = humidity();
+
+            mtx->unlock();
 
             int n = send(current_client, &humi, sizeof(humi), 0);
             if(n == SOCKET_ERROR)
@@ -186,9 +195,8 @@ void Serveur::ClientThread(SOCKET current_client)
                 qDebug() << "Erreur envoie TCP : " << n << " " << WSAGetLastError() << endl;
             }
 
-            mtx->unlock();
-
         }else if(strstr(buf, "relay")){
+            //Turn on/off the relay
 
             if(strstr(buf, "on")){
                 relay(true);

@@ -1,6 +1,6 @@
 #include "grove.h"
 
-void init()
+void init()//Setup wiringPi
 {
     wiringPiSetupGpio();
     pinMode(12,OUTPUT);
@@ -18,24 +18,27 @@ float temperature()
     int lsb;
     float result ;
 
-        fd=wiringPiI2CSetup (0x44) ;
+    //Sensor default adress is 0x44
+    fd=wiringPiI2CSetup (0x44) ;
 
-        if(fd==-1)
-        {
-                printf("Can't setup the I2C device\n");
-                return -1;
-        }else{
-            wiringPiI2CWriteReg8(fd, 0x24, 0x00);
+    if(fd==-1)
+    {
+            printf("Can't setup the I2C device\n");
+            return -1;
+    }else{
+        //Configure sensor
+        wiringPiI2CWriteReg8(fd, 0x24, 0x00);
 
-            delay(16);
+        delay(16);
 
-            msb=wiringPiI2CReadReg8(fd, 0x00);
-            lsb=wiringPiI2CReadReg8(fd, 0x01);
+        //Read sensor
+        msb=wiringPiI2CReadReg8(fd, 0x00);
+        lsb=wiringPiI2CReadReg8(fd, 0x01);
 
-            int temp = msb*256+lsb;
-            result = -45 +(175*temp/65535.0);
-        }
-        return result;
+        int temp = msb*256+lsb;
+        result = -45 +(175*temp/65535.0);
+    }
+    return result;
 }
 
 float humidity()
@@ -45,25 +48,28 @@ float humidity()
     int lsb;
     float result;
 
-        fd=wiringPiI2CSetup (0x44) ;
+    //Sensor default adress is 0x44
+    fd=wiringPiI2CSetup (0x44) ;
 
-        if(fd==-1)
-        {
-                printf("Can't setup the I2C device\n");
-                return -1;
-        }
-        else
-        {
-           wiringPiI2CWriteReg8(fd, 0x24, 0x00);
+    if(fd==-1)
+    {
+            printf("Can't setup the I2C device\n");
+            return -1;
+    }
+    else
+    {
+        //Configure sensor
+        wiringPiI2CWriteReg8(fd, 0x24, 0x00);
 
-            delay(16);
+        delay(16);
 
-            msb=wiringPiI2CReadReg8(fd, 0x03);
-            lsb=wiringPiI2CReadReg8(fd, 0x04);
+        //Read sensor
+        msb=wiringPiI2CReadReg8(fd, 0x03);
+        lsb=wiringPiI2CReadReg8(fd, 0x04);
 
-            int humd = msb*256+lsb;
-             result = 100 *humd/65535.0;
+        int humd = msb*256+lsb;
+         result = 100 *humd/65535.0;
 
-        }
-        return result;
+    }
+    return result;
 }
