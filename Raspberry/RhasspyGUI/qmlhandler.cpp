@@ -207,11 +207,14 @@ void QMLHandler::onPostFinish(QNetworkReply* reply)
                 float temp;
                 memcpy(&temp, answer, sizeof(float));
                 qDebug() << temp;
+                labelDetected->setProperty("text", "Speech detected: " + result +"\n Température: "+QString::number(temp)+"°C");
+
             }else if(bufferRealObject == "humi")
             {
                 float humi;
                 memcpy(&humi, answer, sizeof(float));
                 qDebug() << humi;
+                labelDetected->setProperty("text", "Speech detected: " + result +"\n Humidité: "+QString::number(humi)+"%");
             }
 
         }

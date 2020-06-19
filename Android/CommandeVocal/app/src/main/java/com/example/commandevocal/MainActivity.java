@@ -10,8 +10,11 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -21,10 +24,15 @@ public class MainActivity extends AppCompatActivity {
     Button btnRadiatorOff;
     Button btnOpenBlinds;
     Button btnCloseBlinds;
+    Button btnTemperature;
+    Button btnHumidity;
 
     TextView txt;
     Socket modbusSocket;
     OutputStream modbusSendStream;
+    Socket sensorSocket;
+    OutputStream sensorSendStream;
+    InputStream sensorReceiveStream;
     TacheAsynchrone asyncTask;
 
     // Debut de la classe TacheAsynchrone
@@ -50,10 +58,102 @@ public class MainActivity extends AppCompatActivity {
             //publishProgress();
             // Function to update progress to th UI
 
+            boolean realObject = false;
+            boolean modBus = false;
+
+            //Create and fill the buffer according to the command
+            byte[] modBusBuffer = {00, 0x00, 00, 00, 00, 0x06, 0x01, 0x05, 00, 0x00, (byte)0x00, 00};
+
+            String sensorBuffer = "";
+
+            Log.i("2-", command[0]);
+
+            switch(command[0])
+            {
+                case "light on":
+                    modBusBuffer[10] = (byte)0xFF;
+                    modBus = true;
+                    break;
+                case "light off":
+                    break;
+                case "close blinds":
+                    modBusBuffer[9] = (byte)0x04;
+                    modBusBuffer[10] = (byte)0x00;
+                    sensorBuffer = "relais off";
+                    realObject = true;
+                    modBus = true;
+                    break;
+                case "open blinds":
+                    modBusBuffer[9] = (byte)0x04;
+                    modBusBuffer[10] = (byte)0xFF;
+                    sensorBuffer = "relais on";
+                    realObject = true;
+                    modBus = true;
+                    break;
+                case "radiator on":
+                    modBusBuffer[9] = (byte)0x03;
+                    modBusBuffer[10] = (byte)0xFF;
+                    modBus = true;
+                    break;
+                case "radiator off":
+                    modBusBuffer[9] = (byte)0x03;
+                    modBusBuffer[10] = 0;
+                    modBus = true;
+                    break;
+                case "temperature":
+                    sensorBuffer = "temp";
+                    realObject = true;
+                    break;
+                case "humidity":
+                    sensorBuffer = "humi";
+                    realObject = true;
+                    break;
+                default:
+                    return "";
+                    //break;
+            }
+
+
             try {
-                //Create a socket
-                modbusSocket = new Socket("10.188.181.186", 502);
-                modbusSendStream = modbusSocket.getOutputStream();
+
+                if(modBus == true)
+                {
+                    //Create a socket
+                    modbusSocket = new Socket("192.168.0.48", 502);
+                    modbusSendStream = modbusSocket.getOutputStream();
+
+                    //Send the message
+                    modbusSendStream.write(modBusBuffer);
+
+                    publishProgress("Command send !");
+                }
+
+                if(realObject == true)
+                {
+                    //Create a socket
+                    sensorSocket = new Socket("192.168.0.12", 1234);
+                    sensorSendStream = sensorSocket.getOutputStream();
+
+                    //Send the message
+                    sensorSendStream.write(sensorBuffer.getBytes());
+
+                    sensorReceiveStream = sensorSocket.getInputStream();
+                    byte[] answerBuffer = new byte[20];
+                    sensorReceiveStream.read(answerBuffer, 0, 20);
+                    float result = ByteBuffer.wrap(answerBuffer).order(ByteOrder.LITTLE_ENDIAN).getFloat();
+
+                    if(sensorBuffer == "temp")
+                    {
+                        publishProgress("Temperature: "+String.valueOf(result)+"°C");
+                    }else if(sensorBuffer == "humi")
+                    {
+                        publishProgress("Humidity: "+String.valueOf(result)+"%");
+                    }
+
+                    //Disconnection message
+                    sensorBuffer = "bye";
+                    sensorSendStream.write(sensorBuffer.getBytes());
+                }
 
             } catch (IOException e) {
                 e.printStackTrace();
@@ -61,46 +161,6 @@ public class MainActivity extends AppCompatActivity {
                 return "";
             }
 
-            //Create and fill the buffer according to the command
-            byte[] buffer = {00, 0x00, 00, 00, 00, 0x06, 0x01, 0x05, 00, 0x00, (byte)0x00, 00};
-
-            Log.i("2-", command[0]);
-
-            switch(command[0])
-            {
-                case "light on":
-                    buffer[10] = (byte)0xFF;
-                    break;
-                case "close blinds":
-                    buffer[9] = (byte)0x03;
-                    buffer[10] = (byte)0x00;
-                    break;
-                case "open blinds":
-                    buffer[9] = (byte)0x03;
-                    buffer[10] = (byte)0xFF;
-                    break;
-                case "radiator on":
-                    buffer[9] = (byte)0x02;
-                    buffer[10] = (byte)0xFF;
-                    break;
-                case "radiator off":
-                    buffer[9] = (byte)0x02;
-                    buffer[10] = 0;
-                    break;
-                default:
-                    return "";
-                    //break;
-            }
-
-            //Send the message
-            try {
-                modbusSendStream.write(buffer);
-            } catch (IOException e) {
-                e.printStackTrace();
-                publishProgress("Error: " + e.getMessage());
-            }
-
-            publishProgress("Everything alright !");
 
             return "";
         }
@@ -126,6 +186,8 @@ public class MainActivity extends AppCompatActivity {
         btnRadiatorOff = findViewById(R.id.btnRadiatorOff);
         btnCloseBlinds = findViewById(R.id.btnCloseBlinds);
         btnOpenBlinds = findViewById(R.id.btnOpenBlinds);
+        btnTemperature = findViewById(R.id.btnTemperature);
+        btnHumidity = findViewById(R.id.btnHumidity);
         txt = findViewById(R.id.textView);
 
         asyncTask = new TacheAsynchrone();
@@ -170,6 +232,20 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
 
                 launchModbusTask("open blinds");
+            }
+        });
+
+        btnTemperature.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+
+                launchModbusTask("temperature");
+            }
+        });
+
+        btnHumidity.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+
+                launchModbusTask("humidity");
             }
         });
     }
