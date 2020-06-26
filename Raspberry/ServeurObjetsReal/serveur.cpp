@@ -54,7 +54,7 @@ void Serveur::listenerThread(unsigned short port)
 
     information_sur_la_source.sin_family = AF_INET;
     information_sur_la_source.sin_addr.s_addr = INADDR_ANY;//ecoute sur toutes les IP locales
-    information_sur_la_source.sin_port =htons(port);//ecoute sur le port
+    information_sur_la_source.sin_port = htons(port);//ecoute sur le port
     erreur = bind(socket_ecoute, (struct sockaddr*)&information_sur_la_source, sizeof(information_sur_la_source));
 
     if(erreur != 0)
